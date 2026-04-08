@@ -319,3 +319,134 @@ print("   1. Go to Files (left sidebar)")
 print("   2. Right-click 'best_model.pt' → Download")
 
 print("\n🎉 ALL DONE!")
+
+# ============================================================================
+# CELL 11: Evaluation Metrics (Accuracy, Precision, Recall, F1)
+# ============================================================================
+print("\n" + "=" * 60)
+print("📊 COMPUTING EVALUATION METRICS")
+print("=" * 60)
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+import numpy as np
+
+# Load best model
+print("\nLoading best model...")
+best_checkpoint = torch.load(trainer.best_model_path, map_location=device)
+model.load_state_dict(best_checkpoint['model_state_dict'])
+model.eval()
+print(f"✓ Model loaded from {trainer.best_model_path}")
+
+# Evaluate on validation set
+print("\nEvaluating on test set (50 episodes)...")
+all_predictions = []
+all_labels = []
+
+num_val_episodes = len(val_loader)
+
+with torch.no_grad():
+    for episode_idx, (support_img, support_lbl, query_img, query_lbl) in enumerate(val_loader):
+        support_img = support_img.to(device)
+        support_lbl = support_lbl.to(device)
+        query_img = query_img.to(device)
+        query_lbl = query_lbl.to(device)
+        
+        # Forward pass
+        logits = model(support_img, support_lbl, query_img, 
+                      n_way=CONFIG['n_way'], k_shot=CONFIG['k_shot'])
+        
+        # Get predictions
+        predictions = torch.argmax(logits, dim=1).cpu().numpy()
+        labels = query_lbl.cpu().numpy()
+        
+        all_predictions.extend(predictions)
+        all_labels.extend(labels)
+        
+        if (episode_idx + 1) % 10 == 0:
+            print(f"  Completed {episode_idx + 1}/{num_val_episodes} episodes")
+
+all_predictions = np.array(all_predictions)
+all_labels = np.array(all_labels)
+
+# Compute metrics
+accuracy = accuracy_score(all_labels, all_predictions)
+precision = precision_score(all_labels, all_predictions, average='weighted', zero_division=0)
+recall = recall_score(all_labels, all_predictions, average='weighted', zero_division=0)
+f1 = f1_score(all_labels, all_predictions, average='weighted', zero_division=0)
+
+# Compute per-class metrics
+class_names = [f"Class {i}" for i in range(CONFIG['n_way'])]
+
+print("\n" + "=" * 60)
+print("📈 OVERALL METRICS")
+print("=" * 60)
+print(f"✓ Accuracy:  {accuracy * 100:.2f}%")
+print(f"✓ Precision: {precision * 100:.2f}%")
+print(f"✓ Recall:    {recall * 100:.2f}%")
+print(f"✓ F1-Score:  {f1 * 100:.2f}%")
+
+# Per-class metrics
+print("\n" + "=" * 60)
+print("📊 PER-CLASS METRICS")
+print("=" * 60)
+print(classification_report(all_labels, all_predictions, target_names=class_names, digits=4))
+
+# Confusion Matrix
+print("\n" + "=" * 60)
+print("🔢 CONFUSION MATRIX")
+print("=" * 60)
+cm = confusion_matrix(all_labels, all_predictions)
+print("\nConfusion Matrix:")
+print(cm)
+
+# Visualize Confusion Matrix
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, 
+                yticklabels=class_names, ax=ax, cbar=True)
+    ax.set_xlabel('Predicted Label', fontsize=12)
+    ax.set_ylabel('True Label', fontsize=12)
+    ax.set_title('Confusion Matrix - Few-Shot Learning Model', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('/content/confusion_matrix.png', dpi=100, bbox_inches='tight')
+    print("\n✓ Confusion matrix saved to: /content/confusion_matrix.png")
+    plt.close()
+    
+    # Metrics Bar Chart
+    fig, ax = plt.subplots(figsize=(10, 6))
+    metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+    scores = [accuracy, precision, recall, f1]
+    colors = ['#2ecc71', '#3498db', '#e74c3c', '#f39c12']
+    
+    bars = ax.bar(metrics, scores, color=colors, alpha=0.8, edgecolor='black', linewidth=2)
+    ax.set_ylabel('Score', fontsize=12)
+    ax.set_title('Model Performance Metrics', fontsize=14, fontweight='bold')
+    ax.set_ylim([0, 1])
+    ax.grid(axis='y', alpha=0.3)
+    
+    # Add percentage labels on bars
+    for bar, score in zip(bars, scores):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height + 0.02,
+                f'{score*100:.1f}%', ha='center', va='bottom', fontsize=11, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('/content/metrics_chart.png', dpi=100, bbox_inches='tight')
+    print("✓ Metrics chart saved to: /content/metrics_chart.png")
+    plt.close()
+    
+except Exception as e:
+    print(f"⚠ Could not create visualizations: {str(e)}")
+
+print("\n" + "=" * 60)
+print("✅ EVALUATION COMPLETE!")
+print("=" * 60)
+print(f"\nTotal Test Samples: {len(all_labels)}")
+print(f"Correct Predictions: {(all_predictions == all_labels).sum()}")
+print(f"Incorrect Predictions: {(all_predictions != all_labels).sum()}")
+print("\n📥 DOWNLOAD METRICS:")
+print("   • /content/confusion_matrix.png")
+print("   • /content/metrics_chart.png")
