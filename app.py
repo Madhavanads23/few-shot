@@ -55,11 +55,15 @@ def load_model_and_data():
         similarity=config.similarity_metric
     ).to(device)
     
-    # Load checkpoint
+    # Load checkpoint (with fallback for mismatched architectures)
     if os.path.exists(config.best_model_path):
-        checkpoint = torch.load(config.best_model_path, map_location=device)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        print(f"✓ Model loaded from {config.best_model_path}")
+        try:
+            checkpoint = torch.load(config.best_model_path, map_location=device)
+            model.load_state_dict(checkpoint['model_state_dict'])
+            print(f"✓ Model loaded from {config.best_model_path}")
+        except (RuntimeError, KeyError) as e:
+            print(f"⚠ Checkpoint format mismatch: {str(e)[:100]}...")
+            print("  Using untrained model (training in Colab will save compatible checkpoint)")
     else:
         print("⚠ No checkpoint found - using untrained model")
     
