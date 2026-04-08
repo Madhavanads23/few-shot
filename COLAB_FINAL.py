@@ -138,7 +138,7 @@ dataset_path = None
 
 # Search for dataset folder
 result = subprocess.run(
-    ['find', '/content', '-maxdepth', 3, '-name', 'dataset', '-type', 'd'],
+    ['find', '/content', '-maxdepth', '3', '-name', 'dataset', '-type', 'd'],
     capture_output=True, text=True, timeout=10
 )
 
