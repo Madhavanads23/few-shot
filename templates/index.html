@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Few-Shot Image Classifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .gpu-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+        
+        .gpu-info.active {
+            background: #2ecc71;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8eaff;
+        }
+        
+        .upload-area-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area-text {
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .upload-area-subtext {
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button.secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .button.secondary:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .result-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .prediction-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #2ecc71;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prediction-label {
+            font-size: 0.9em;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .prediction-text {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .confidence-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .confidence-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-text {
+            text-align: right;
+            font-size: 0.9em;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .chart-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .error {
+            background: #fee;
+            border-left: 5px solid #e74c3c;
+            padding: 20px;
+            border-radius: 8px;
+            color: #c0392b;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .success {
+            background: #efe;
+            border-left: 5px solid #2ecc71;
+            padding: 20px;
+            border-radius: 8px;
+            color: #27ae60;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success.show {
+            display: block;
+        }
+        
+        .footer {
+            background: #f8f9ff;
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .upload-area {
+                padding: 25px;
+            }
+            
+            .prediction-text {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 Few-Shot Image Classifier</h1>
+            <p>Upload an image to classify it using advanced few-shot learning</p>
+            <div class="gpu-info {% if gpu_available %}active{% endif %}">
+                {% if gpu_available %}
+                    ✓ GPU: {{ gpu_name }}
+                {% else %}
+                    ⚠ CPU Mode (slower)
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-area-icon">📸</div>
+                    <div class="upload-area-text">Drag & Drop or Click to Upload</div>
+                    <div class="upload-area-subtext">Supported: PNG, JPG, JPEG, GIF (Max 16MB)</div>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Classifying image... This may take a few seconds</p>
+            </div>
+            
+            <!-- Results -->
+            <div class="results" id="results">
+                <div class="result-header">
+                    <img id="resultImage" class="result-image" src="" alt="Uploaded image">
+                </div>
+                
+                <div class="prediction-box">
+                    <div class="prediction-label">Predicted Class</div>
+                    <div class="prediction-text" id="predictionText">-</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                    </div>
+                    <div class="confidence-text" id="confidenceText">Confidence: 0%</div>
+                </div>
+                
+                <div class="chart-container" id="chartContainer"></div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="button" onclick="resetForm()">Upload Another Image</button>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div class="error" id="error"></div>
+            
+            <!-- Success Message -->
+            <div class="success" id="success"></div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Powered by Few-Shot Learning & PyTorch</p>
+        </div>
+    </div>
+    
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+        
+        // File input change
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            // Validate file
+            const allowed = ['image/png', 'image/jpeg', 'image/gif'];
+            if (!allowed.includes(file.type)) {
+                showError('Invalid file type. Please upload PNG, JPG, or GIF.');
+                return;
+            }
+            
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File too large. Maximum 16MB.');
+                return;
+            }
+            
+            // Upload file
+            uploadFile(file);
+        }
+        
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Show loading
+            loading.style.display = 'block';
+            results.classList.remove('show');
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                showError('Error: ' + error.message);
+            });
+        }
+        
+        function displayResults(data) {
+            // Display image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('resultImage').src = e.target.result;
+            };
+            reader.readAsArrayBuffer(
+                fileInput.files[0],
+                () => {
+                    const img = document.getElementById('resultImage');
+                    img.src = URL.createObjectURL(fileInput.files[0]);
+                }
+            );
+            
+            // Simple approach - use file
+            document.getElementById('resultImage').src = URL.createObjectURL(fileInput.files[0]);
+            
+            // Display prediction
+            document.getElementById('predictionText').textContent = data.predicted_class;
+            
+            const confidence = (data.confidence * 100).toFixed(1);
+            document.getElementById('confidenceFill').style.width = confidence + '%';
+            document.getElementById('confidenceText').textContent = `Confidence: ${confidence}%`;
+            
+            // Display chart
+            const chartHtml = `<img src="${data.chart}" alt="Confidence Chart" style="max-width: 100%; height: auto;">`;
+            document.getElementById('chartContainer').innerHTML = chartHtml;
+            
+            // Show results
+            results.classList.add('show');
+            
+            showSuccess(`Successfully classified as: ${data.predicted_class}`);
+        }
+        
+        function resetForm() {
+            fileInput.value = '';
+            results.classList.remove('show');
+            loading.style.display = 'none';
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+        }
+        
+        function showError(message) {
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+        }
+        
+        function showSuccess(message) {
+            successDiv.textContent = '✓ ' + message;
+            successDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>

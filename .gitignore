@@ -1,0 +1,37 @@
+# Dataset and checkpoints - these are large
+dataset/
+cifar10_raw/
+checkpoints/
+results/
+
+# Python cache and virtual env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Weights and models (except for documentation)
+*.pt
+*.pth
+*.ckpt
+
+# Logs
+*.log
