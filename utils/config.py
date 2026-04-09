@@ -7,8 +7,8 @@ class Config:
     
     # Dataset
     dataset_dir: str = 'dataset'
-    train_classes: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
-    test_classes: List[int] = field(default_factory=lambda: [5, 6, 7, 8, 9])
+    train_classes: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    test_classes: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     
     # Few-shot settings
     n_way: int = 5
@@ -34,11 +34,11 @@ class Config:
     scheduler_type: str = 'cosine'      # 'cosine' or 'step'
     
     # Device
-    device: str = 'cuda'  # Use 'cuda' if available, otherwise falls back to 'cpu'
+    device: str = 'cpu'  # Use 'cuda' if available, otherwise falls back to 'cpu'
     seed: int = 42
     
     # Paths
-    best_model_path: str = 'checkpoints/best_model.pt'
+    best_model_path: str = 'checkpoints/best_model (1).pt'
     results_dir: str = 'results'
     
     def to_dict(self) -> Dict[str, Any]:

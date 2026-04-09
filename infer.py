@@ -113,7 +113,7 @@ class FewShotInferencer:
 # Example usage
 if __name__ == "__main__":
     config = Config()
-    inferencer = FewShotInferencer('checkpoints/best_model.pt', config)
+    inferencer = FewShotInferencer('checkpoints/best_model (1).pt', config)
     
     # Load test data
     val_loader = EpisodicDataLoader(

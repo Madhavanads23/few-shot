@@ -58,7 +58,7 @@ class FewShotTrainer:
         
         self.best_accuracy = 0
         self.best_model_path = config.get('best_model_path', 
-                                         'best_model.pt')
+                                         'checkpoints/best_model (1).pt')
     
     def train_epoch(self):
         """Train for one epoch with explicit accuracy logging."""
