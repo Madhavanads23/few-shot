@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLIP Model - Image Classification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragover {
+            background: #e8ecf9;
+            border-color: #764ba2;
+        }
+        
+        .upload-area input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .preview-area {
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .preview-area.active {
+            display: block;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .results-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .results-area.active {
+            display: block;
+        }
+        
+        .result-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .prediction {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .confidence {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s;
+        }
+        
+        .all-scores {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .score-name {
+            min-width: 100px;
+        }
+        
+        .score-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #e0e0e0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .filename {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 CLIP Image Classification</h1>
+            <p>Pre-trained OpenAI CLIP model - Zero-shot learning</p>
+        </div>
+        
+
+        
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept="image/*" />
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">Click to upload or drag and drop</div>
+            <div class="upload-hint">PNG, JPG, GIF or BMP (max 16MB)</div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" id="predictBtn" onclick="predictImage()" disabled>
+                🚀 Classify Image
+            </button>
+            <button class="btn btn-secondary" onclick="clearResults()">
+                🗑️ Clear
+            </button>
+        </div>
+        
+        <div id="preview-area" class="preview-area">
+            <img id="previewImage" class="preview-image" />
+        </div>
+        
+        <div id="results-area" class="results-area">
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing image...</p>
+            </div>
+            <div id="result-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('preview-area');
+        const previewImage = document.getElementById('previewImage');
+        const resultsArea = document.getElementById('results-area');
+        const resultContent = document.getElementById('result-content');
+        const predictBtn = document.getElementById('predictBtn');
+        
+        let selectedFile = null;
+        
+        // Upload area click
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        // File input change
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewArea.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+            
+            // Enable predict button
+            predictBtn.disabled = false;
+            resultsArea.classList.remove('active');
+        }
+        
+        function predictImage() {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            resultsArea.classList.add('active');
+            document.getElementById('loading').style.display = 'block';
+            resultContent.innerHTML = '';
+            predictBtn.disabled = true;
+            
+            fetch('/api/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    displayResult(data);
+                } else {
+                    resultContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                }
+                
+                predictBtn.disabled = false;
+            })
+            .catch(e => {
+                document.getElementById('loading').style.display = 'none';
+                resultContent.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+                predictBtn.disabled = false;
+            });
+        }
+        
+        function displayResult(data) {
+            let html = '<div class="result-item">';
+            html += `<div class="success">✅ Classification successful</div>`;
+            html += `<div class="prediction">${data.prediction}</div>`;
+            html += `<div class="confidence">Confidence: ${data.confidence}</div>`;
+            
+            const confValue = parseFloat(data.confidence) / 100;
+            html += `<div class="confidence-bar"><div class="confidence-fill" style="width: ${confValue * 100}%"></div></div>`;
+            
+            if (data.all_scores) {
+                html += '<div class="all-scores"><strong>All class scores:</strong>';
+                
+                const scores = Object.entries(data.all_scores)
+                    .sort((a, b) => b[1] - a[1]);
+                
+                for (const [name, score] of scores) {
+                    html += `
+                        <div class="score-item">
+                            <span class="score-name">${name}</span>
+                            <span class="score-value">${(score * 100).toFixed(1)}%</span>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            resultContent.innerHTML = html;
+        }
+        
+        function clearResults() {
+            selectedFile = null;
+            fileInput.value = '';
+            previewArea.classList.remove('active');
+            resultsArea.classList.remove('active');
+            resultContent.innerHTML = '';
+            predictBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>

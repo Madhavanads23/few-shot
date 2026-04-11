@@ -1,0 +1,21 @@
+{
+  "model_type": "pre-trained-clip",
+  "accuracy": 0.8966,
+  "precision": 0.980595374541917,
+  "recall": 0.8966,
+  "f1": 0.9349702395526555,
+  "total_images": 5000,
+  "correct_predictions": 4483,
+  "class_accuracies": {
+    "airplane": 0.0,
+    "automobile": 0.0,
+    "bird": 0.0,
+    "cat": 0.0,
+    "deer": 0.0,
+    "dog": 0.884,
+    "frog": 0.773,
+    "horse": 0.975,
+    "ship": 0.949,
+    "truck": 0.902
+  }
+}
