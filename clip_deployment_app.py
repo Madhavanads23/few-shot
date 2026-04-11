@@ -24,11 +24,21 @@ from clip_model_wrapper import CLIPModelWrapper
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['TEMPLATES_AUTO_RELOAD'] = True  # Disable template caching
+app.jinja_env.cache = None  # Disable Jinja2 cache
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # Create upload folder
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Disable caching
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # ============================================================
 # GLOBAL MODEL

@@ -105,29 +105,29 @@ class CLIPModelWrapper:
                 image_features = self.model.get_image_features(**image_inputs)
                 image_embeddings = torch.nn.functional.normalize(image_features, p=2, dim=-1)
                 
-                # Compute similarity scores
-                similarity_scores = torch.nn.functional.cosine_similarity(
-                    image_embeddings, self.text_embeddings
-                )
+                # Compute similarity scores between image and each class text
+                # Simple dot product between (1, 512) and (10, 512)
+                similarity_scores = (image_embeddings @ self.text_embeddings.T).squeeze(0)
                 
-                # Get prediction
-                confidence, predicted_idx = torch.max(similarity_scores, dim=1)
-                predicted_class = self.class_names[predicted_idx.item()]
-                confidence = confidence.item()
+                # Get prediction - similarity_scores is shaped (10,)
+                confidence = torch.max(similarity_scores).item()
+                predicted_idx = torch.argmax(similarity_scores).item()
+                predicted_class = self.class_names[predicted_idx]
             
             result = {
                 'class': predicted_class,
                 'confidence': confidence,
-                'class_index': predicted_idx.item(),
+                'class_index': predicted_idx,
                 'device': str(self.device),
                 'success': True
             }
             
             if return_all_scores:
-                scores = similarity_scores.cpu().numpy()[0]
+                # Convert similarity scores (shape 10,) to numpy
+                scores_np = similarity_scores.cpu().numpy()
                 result['all_scores'] = {
                     name: float(score) 
-                    for name, score in zip(self.class_names, scores)
+                    for name, score in zip(self.class_names, scores_np)
                 }
             
             return result
